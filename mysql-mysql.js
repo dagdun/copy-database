@@ -1,15 +1,18 @@
 // require table structure in target before dump the data
 
 const mariadb = require("mariadb");
-const limit = 50;
-const limit_break = 1000;
-const db_name = 'tr_online'
+const limit = 300;
+const start_row = 0;
+const limit_break = 500000;
+const db_name = "db_name";
+const skipTable = [];
+const selectedTable = [];
 
 const connect_target = async () => {
   const pool = mariadb.createPool({
     host: "127.0.0.1",
-    user: "root",
-    password: "xxxxx",
+    user: "user",
+    password: "xxx",
     port: "3306",
     database: db_name,
   });
@@ -19,9 +22,9 @@ const connect_target = async () => {
 const connect_source = async () => {
   const pool = mariadb.createPool({
     host: "127.0.0.1",
-    user: "root",
-    password: "xxxx",
-    port: "3300",
+    user: "user",
+    password: "xxx",
+    port: "3306",
     database: db_name,
   });
   return await pool.getConnection();
@@ -61,6 +64,7 @@ const dump = async (source, target, table, primary, offset) => {
     );
 
     await target.commit();
+    console.log("commit data", table, rows.length, "/", offset);
     return rows.length === limit;
   } catch (e) {
     console.log("error", e.message);
@@ -83,6 +87,13 @@ const main = async () => {
   const tables = await source.query("show tables");
   for (var i = 0; i < tables.length; i++) {
     const table = tables[i][`Tables_in_${db_name}`];
+    if (skipTable.includes(table)) {
+      continue;
+    }
+
+    if (selectedTable.length > 0 && !selectedTable.includes(table)) {
+      continue;
+    }
     console.log("start table: ", table);
 
     const keys = await source.query(
@@ -90,7 +101,7 @@ const main = async () => {
     );
     const primary = getPrimary(keys);
     console.log("table ", table, "has ", primary);
-    let offset = 0;
+    let offset = start_row;
     let more;
     do {
       more = await dump(source, target, table, primary, offset);

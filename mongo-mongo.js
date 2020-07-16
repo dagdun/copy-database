@@ -1,12 +1,14 @@
 const MongoClient = require("mongodb").MongoClient;
 
-const source_host = "mongodb://localhost:27000";
-const source_dbname = "tr_online";
+const source_host = "mongodb://localhost:27017";
+const source_dbname = "db_name";
 
 const target_host = "mongodb://localhost:27017";
-const target_dbname = "tr_online";
+const target_dbname = "db_name";
 
-const limit_docs = 500
+const limit_docs = 50000
+const skipCollections = []
+const selectedCollections = []
 
 const conn = async (url, db) => {
   const client = await MongoClient.connect(url, { useUnifiedTopology: true });
@@ -40,6 +42,14 @@ const main = async () => {
     const collection = coll[i].name;
     const sourceCollection = source.collection(collection);
     const targetCollection = target.collection(collection);
+    if (skipCollections.includes(collection)) {
+      continue
+    }
+
+    if (selectedCollections.length > 0 && !selectedCollections.includes(collection)) {
+      continue
+    }
+    
     try {
       await index(sourceCollection, targetCollection, collection);
     } catch (e) {

@@ -1,11 +1,12 @@
 const MongoClient = require("mongodb").MongoClient;
 const elasticsearch = require("elasticsearch");
 
-const es_index = "index";
+const es_index = "es_index";
 const es_host = "localhost:9200";
-const mongo_dbname = "db_name_xxxx";
-const mongo_source = "mongodb://localhost:27017";
 const es_version = "7.6";
+const mongo_dbname = "stats";
+const mongo_source = "mongodb://localhost:27017";
+const mongo_collection = "es_index";
 
 const esClient = new elasticsearch.Client({
   host: es_host,
@@ -19,11 +20,7 @@ const conn = async (url, db) => {
 };
 
 const main = async () => {
-  if (process.argv.length < 3) {
-    console.log("add collection name");
-    return;
-  }
-  const collection = process.argv[2];
+  const collection = mongo_collection;
   const [sourceClient, source] = await conn(mongo_source, mongo_dbname);
   const sourceCollection = source.collection(collection);
 
@@ -41,10 +38,9 @@ const main = async () => {
     });
     esBulk.push(doc);
     insertLog.push(doc.id);
-    if (++i % 5 === 0) {
+    if (++i % 500 === 0) {
       const esResult = await esClient.bulk({ body: esBulk });
-      console.log(JSON.stringify(esBulk));
-      console.log("insert", i, "error: ", esResult);
+      console.log("insert", i, "error: ", esResult.error);
       esBulk = [];
       insertLog = [];
     }
