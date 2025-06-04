@@ -21,9 +21,11 @@ const dump = async (name, sourceCollection, targetCollection) => {
   let limit = 0;
   while ((doc = await cursor.next())) {
     try {
-      targetCollection.insertOne(doc);
+      // wait for the insertion to finish so errors can be caught
+      await targetCollection.insertOne(doc);
       console.log(`${name} insert ${doc._id}`);
     } catch (e) {
+      // ignore duplicate key errors while logging other issues
       console.log(e.message)
     }
 
